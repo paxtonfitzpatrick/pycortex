@@ -492,7 +492,7 @@ def _mri_surf2surf_command(src_subj, trg_subj, input_file, output_file, hemi):
 
 
 
-def mri_surf2surf(data, source_subj, target_subj, hemi):
+def mri_surf2surf(data, source_subj, target_subj, hemi, subjects_dir=None):
     """Uses freesurfer mri_surf2surf to transfer vertex data between
         two freesurfer subjects
     
@@ -523,7 +523,13 @@ def mri_surf2surf(data, source_subj, target_subj, hemi):
     tf_out = NamedTemporaryFile(suffix='.gii')
     cmd = _mri_surf2surf_command(source_subj, target_subj,
                                    tf_in.name, tf_out.name, hemi)
-    p = sp.Popen(cmd)
+    if subjects_dir is not None:
+        env = os.environ.copy()
+        env['SUBJECTS_DIR'] = subjects_dir
+    else:
+        env = None
+
+    p = sp.Popen(cmd, env=env)
     exit_code = p.wait()
     if exit_code != 0:
         import warnings
@@ -607,8 +613,9 @@ def get_mri_surf2surf_matrix(source_subj, hemi, surface_type,
     source_verts, _, _ = get_surf(source_subj, hemi, surface_type,
                                   freesurfer_subject_dir=subjects_dir)
 
-    transformed_coords = mri_surf2surf(source_verts.T, 
-                                            source_subj, target_subj, hemi)
+    transformed_coords = mri_surf2surf(source_verts.T,
+                                       source_subj, target_subj, hemi,
+                                       subjects_dir=subjects_dir)
 
     kdt = KDTree(source_verts)
     print("Getting nearest neighbors")
@@ -619,7 +626,8 @@ def get_mri_surf2surf_matrix(source_subj, hemi, surface_type,
                           if isinstance(random_state, int) else random_state)
     test_images = rng.randn(n_test_images, len(source_verts))
     transformed_test_images = mri_surf2surf(test_images, source_subj,
-                                           target_subj, hemi)
+                                            target_subj, hemi,
+                                            subjects_dir=subjects_dir)
 
     # Solve linear problems to get coefficients
     all_coefs = []
