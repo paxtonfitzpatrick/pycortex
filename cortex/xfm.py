@@ -363,7 +363,7 @@ class Transform(object):
         # Read voxel resolution of the functional volume
         try:
             cmd = ('mri_info', '--res', func_nii)
-            ll = subprocess.check_output(cmd).split("\n")[1]
+            ll = subprocess.check_output(cmd).splitlines()[1]
             func_voxres = np.array([np.float(s) for s in ll.split() if s])
         except OSError:
             print ("Error occured while executing:\n{}".format(' '.join(cmd)))
