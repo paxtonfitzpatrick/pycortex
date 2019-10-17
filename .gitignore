@@ -25,6 +25,8 @@ lib64
 # NOTE: the filestore really should never be in the git repo... Needs work.
 filestore/db/*/cache
 filestore/db/*/surface-info
+# TEMPORARILY ADDING GENERATED NIFTIS -- TEST IF NECESSARY LATER IN DOCKER
+filestore/db/*/anatomicals
 
 # Installer logs
 pip-log.txt
