@@ -959,13 +959,37 @@ var mriview = (function(module) {
         var inflate = function() {
             this.animate([{state:'mix', idx:parseFloat(viewopts.anim_speed), value:.5}]);
         }.bind(this);
+        var inflate_to_cuts = function() {
+            this.animate([{state:'mix', idx:parseFloat(viewopts.anim_speed), value:.501}]);
+        }.bind(this);
         var flatten = function() {
             this.animate([ {state:'mix', idx:parseFloat(viewopts.anim_speed), value:1}]);
         }.bind(this);
+
+        // saves out current view as a png
+        this.imageWidth = 2400;
+        this.imageHeight = 1200;
+        var saveImage = function() {
+            var image = viewer.getImage(this.imageWidth.toFixed(), this.imageHeight.toFixed());
+            var a = document.createElement('a');
+            a.download = 'image.png';
+            a.href = image.toDataURL();
+            a.click();
+        }.bind(this);
+
         cam_ui.add({
             reset: {action:this.reset_view, key:'r', help:'Reset view'},
             inflate: {action:inflate, key:'i', help:'Inflate'},
+            "inflate to cuts": {action:inflate_to_cuts, key:'k', help:'Inflate to cuts'},
             flatten: {action:flatten, key:'f', help:'Flatten'},
+        });
+
+        // UI controls for saving image and selecting image size
+        var imageFolder = cam_ui.addFolder('Save image');
+        imageFolder.add({
+            "Save": {action:saveImage, key:'S', modKeys: ['shiftKey'], help:'Save current view as a png'},
+            "Width": {action:[this, 'imageWidth', 500, 4000]},
+            "Height": {action:[this, 'imageHeight', 500, 4000]}
         });
 
         // keyboard shortcut menu
@@ -977,7 +1001,8 @@ var mriview = (function(module) {
                 list = [this.ui._desc,
                         this.ui._desc.camera._desc,
                         this.ui._desc.sliceplanes._desc,
-                        this.ui._desc.sliceplanes._desc.move._desc]
+                        this.ui._desc.sliceplanes._desc.move._desc,
+                        imageFolder._desc];
 
                 // add surface items to list
                 surface_names = Object.keys(this.ui._desc.surface)
@@ -995,7 +1020,13 @@ var mriview = (function(module) {
                         
                         if ('key' in list[i][name]){
                             new_html += '<tr><td style="text-align: center;">'
-                            new_html += list[i][name]['key'] + '</td><td>' + diplay_name + '</td></tr>'
+                            if ('modKeys' in list[i][name]){
+                                let modKeys = list[i][name]['modKeys'];
+                                modKeys = modKeys.map((modKey) => modKey.substring(0, modKey.length - 3));
+                                modKeys = modKeys.join(' + ');
+                                new_html += modKeys + ' + ';
+                            }
+                            new_html += list[i][name]['key'].toUpperCase() + '</td><td>' + diplay_name + '</td></tr>'
                         }
                         if ('wheel' in list[i][name]){
                             new_html += '<tr><td style="text-align: center;">'

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import sys
 from numpy.distutils.misc_util import get_numpy_include_dirs
 
 try:
@@ -62,12 +61,13 @@ formats = Extension('cortex.formats', ['cortex/formats.pyx'],
                     include_dirs=get_numpy_include_dirs())
 
 setup(name='pycortex',
-      version='1.0.2',
+      version='1.1.dev0',
       description='Python Cortical mapping software for fMRI data',
       author='James Gao',
       author_email='james@jamesgao.com',
       packages=['cortex', 'cortex.webgl', 'cortex.mapper', 'cortex.dataset',
-                'cortex.blender', 'cortex.tests', 'cortex.quickflat', 'cortex.polyutils'],
+                'cortex.blender', 'cortex.tests', 'cortex.quickflat', 'cortex.polyutils',
+                'cortex.export'],
       ext_modules=cythonize([ctm, formats]),
       package_data={
             'cortex': [
