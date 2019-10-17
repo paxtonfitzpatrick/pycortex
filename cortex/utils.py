@@ -2,6 +2,7 @@
 """
 import io
 import os
+import h5py
 import copy
 import binascii
 import warnings
@@ -222,7 +223,8 @@ def get_hemi_masks(subject, xfmname, type='nearest'):
     '''
     return get_mapper(subject, xfmname, type=type).hemimasks
 
-def add_roi(data, name="new_roi", open_inkscape=True, add_path=True, **kwargs):
+def add_roi(data, name="new_roi", open_inkscape=True, add_path=True,
+            overlay_file=None, **kwargs):
     """Add new flatmap image to the ROI file for a subject.
 
     (The subject is specified in creation of the data object)
@@ -247,6 +249,9 @@ def add_roi(data, name="new_roi", open_inkscape=True, add_path=True, **kwargs):
     add_path : bool, optional
         If True, also adds a sub-layer to the `rois` new SVG layer will automatically
         be created in the ROI group with the same `name` as the overlay.
+    overlay_file : str, optional
+        Custom overlays.svg file to use instead of the default one for this
+        subject (if not None). Default None.
     kwargs : dict
         Passed to cortex.quickflat.make_png
     """
@@ -258,7 +263,7 @@ def add_roi(data, name="new_roi", open_inkscape=True, add_path=True, **kwargs):
     if isinstance(dv, dataset.Dataset):
         raise TypeError("Please specify a data view")
 
-    svg = db.get_overlay(dv.subject)
+    svg = db.get_overlay(dv.subject, overlay_file=overlay_file)
     fp = io.BytesIO()
 
     quickflat.make_png(fp, dv, height=1024, with_rois=False, with_labels=False, **kwargs)
@@ -857,6 +862,61 @@ def get_shared_voxels(subject, xfmname, hemi="both", merge=True, use_astar=True)
             return np.vstack(out)
         else:
             return tuple(out)
+
+
+def load_sparse_array(fname, varname):
+    """Load a numpy sparse array from an hdf file
+
+    Parameters
+    ----------
+    fname: string
+        file name containing array to be loaded
+    varname: string
+        name of variable to be loaded
+
+    Notes
+    -----
+    This function relies on variables being stored with specific naming
+    conventions, so cannot be used to load arbitrary sparse arrays.
+    """
+    import scipy.sparse
+    with h5py.File(fname) as hf:
+        data = (hf['%s_data'%varname], hf['%s_indices'%varname], hf['%s_indptr'%varname])
+        sparsemat = scipy.sparse.csr_matrix(data, shape=hf['%s_shape'%varname])
+    return sparsemat
+
+
+def save_sparse_array(fname, data, varname, mode='a'):
+    """Save a numpy sparse array to an hdf file
+    
+    Results in relatively smaller file size than numpy.savez
+
+    Parameters
+    ----------
+    fname : string
+        file name to save
+    data : sparse array
+        data to save
+    varname : string
+        name of variable to save
+    mode : string
+        write / append mode set, one of ['w','a'] (passed to h5py.File())
+    """
+    import scipy.sparse
+    if not isinstance(data, scipy.sparse.csr.csr_matrix):
+        data_ = scipy.sparse.csr_matrix(data)
+    else:
+        data_ = data
+    with h5py.File(fname, mode=mode) as hf:
+        # Save indices
+        hf.create_dataset(varname + '_indices', data=data_.indices, compression='gzip')
+        # Save data
+        hf.create_dataset(varname + '_data', data=data_.data, compression='gzip')
+        # Save indptr
+        hf.create_dataset(varname + '_indptr', data=data_.indptr, compression='gzip')
+        # Save shape
+        hf.create_dataset(varname + '_shape', data=data_.shape, compression='gzip')
+
 
 def get_cmap(name):
     """Gets a colormaps

@@ -299,7 +299,7 @@ def _make_hatch_image(hatch_data, height, sampler='nearest', hatch_space=4, reca
     hx, hy = np.meshgrid(range(dmap.shape[1]), range(dmap.shape[0]))
 
     hatchpat = (hx+hy)%(2*hatch_space) < 2
-    # Leila code that breaks shit:
+    # Leila code that breaks:
     #hatch_size = [0, 4, 4]
     #hatchpat = (hx + hy + hatch_size[0])%(hatch_size[1] * hatch_space) < hatch_size[2]
 
@@ -313,11 +313,8 @@ def _make_flatmask(subject, height=1024):
     from .. import polyutils
     from PIL import Image, ImageDraw
     pts, polys = db.get_surf(subject, "flat", merge=True, nudge=True)
-    bounds = polyutils.trace_poly(polyutils.boundary_edges(polys))
-    try:
-        left, right = bounds.next(), bounds.next() # python 2.X
-    except AttributeError:
-        left, right = next(bounds), next(bounds) # python 3.X
+    left, right = polyutils.trace_poly(polyutils.boundary_edges(polys))
+
     aspect = (height / (pts.max(0) - pts.min(0))[1])
     lpts = (pts[left] - pts.min(0)) * aspect
     rpts = (pts[right] - pts.min(0)) * aspect
